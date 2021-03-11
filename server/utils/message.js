@@ -1,20 +1,30 @@
 const moment = require("moment");
-var generateMessage = (from, text, userId, url) => {
-  return {
-    from,
-    text,
-    createdAt: moment().valueOf(),
-    userId,
-    url,
-  };
+const { Message } = require("../db/models/message");
+
+var generateMessage = async (from, text, userId, url, room) => {
+  try {
+    const message = new Message({
+      from,
+      text,
+      createdAt: moment().valueOf(),
+      userId,
+      url,
+      room,
+    });
+    const m = await message.save();
+    return m;
+  } catch (error) {
+    console.log("ERROR: ", error);
+  }
 };
 
-var generateLocationMessage = (from, latitude, longitude) => {
-  return {
-    from,
-    url: `https://www.google.com/maps?q=${latitude},${longitude}`,
-    createdAt: moment().valueOf(),
-  };
+const getMessageList = async (room) => {
+  try {
+    const messages = await Message.find({ room });
+    return messages;
+  } catch (error) {
+    console.log("ERROR: ", error);
+  }
 };
 
-module.exports = { generateMessage, generateLocationMessage };
+module.exports = { generateMessage, getMessageList };

@@ -3,7 +3,9 @@ const http = require("http");
 const express = require("express");
 const { Server } = require("socket.io");
 
-var { generateMessage, generateLocationMessage } = require("./utils/message");
+const { mongoose } = require("./db/index");
+
+var { generateMessage, getMessageList } = require("./utils/message");
 const { isRealString } = require("./utils/validation");
 const { Users } = require("./utils/users");
 const publicPath = path.join(__dirname, "../public");
@@ -18,71 +20,88 @@ var io = new Server(server, {
   },
 });
 var users = new Users();
-// console.log(io);
+
 app.use(express.static(publicPath));
 
 io.on("connection", (socket) => {
   console.log("user connected");
-  socket.on("join", (params, callback) => {
+  socket.on("join", async (params, callback) => {
     if (!isRealString(params.name) || !isRealString(params.room)) {
       return callback("Name and room name are required");
     }
 
     socket.join(params.room);
-    users.removeUser(socket.id);
-    users.addUser(socket.id, params.name, params.room, params.url);
-
-    io.to(params.room).emit("updateUserList", users.getUserList(params.room));
-    //socket.leave('name of the room')
-
-    //io.emit -> io.to('name of the room').emit
-    //socket.broadcast.emit -> socket.broadcast.to('name of the room')
+    await users.removeUser(socket.id);
+    await users.addUser(socket.id, params.name, params.room, params.url);
+    const usersList = await users.getUserList(params.room);
+    io.to(params.room).emit("updateUserList", usersList);
 
     socket.emit(
       "newMessage",
-      generateMessage("Admin", "Welcome to the chat app")
+      await generateMessage(
+        "Admin",
+        "Welcome to the chat app",
+        `1`,
+        "https://cdn3.iconfinder.com/data/icons/business-avatar-1/512/7_avatar-512.png",
+        params.room
+      )
     );
 
     socket.broadcast
       .to(params.room)
       .emit(
         "newMessage",
-        generateMessage("Admin", `${params.name} has joined`)
+        await generateMessage(
+          "Admin",
+          `${params.name} has joined`,
+          `1`,
+          "https://cdn3.iconfinder.com/data/icons/business-avatar-1/512/7_avatar-512.png",
+          params.room
+        )
       );
     callback();
   });
 
-  socket.on("createMessage", (message, callback) => {
-    var user = users.getUser(socket.id);
+  socket.on("createMessage", async (message, callback) => {
+    var user = await users.getUser(socket.id);
     if (user && isRealString(message.text)) {
       io.to(user.room).emit(
         "newMessage",
-        generateMessage(user.name, message.text, socket.id, user.url)
+        await generateMessage(
+          user.name,
+          message.text,
+          socket.id,
+          user.url,
+          user.room
+        )
       );
     }
-
     callback();
   });
 
-  socket.on("createLocationMessage", (coords) => {
-    var user = users.getUser(socket.id);
-    if (user) {
-      io.to(user.room).emit(
-        "newLocationMessage",
-        generateLocationMessage(user.name, coords.latitude, coords.longitude)
-      );
-    }
+  socket.on("getMessagesList", async (room, callback) => {
+    const messages = await getMessageList(room);
+    callback(messages);
   });
 
-  socket.on("disconnect", () => {
+  socket.on("disconnect", async () => {
     console.log("user disconnected");
-    var user = users.removeUser(socket.id);
+    var user = await users.removeUser(socket.id);
 
     if (user) {
-      io.to(user.room).emit("updateUserList", users.getUserList(user.room));
+      io.to(user.room).emit(
+        "updateUserList",
+        await users.getUserList(user.room)
+      );
       io.to(user.room).emit(
         "newMessage",
-        generateMessage("Admin", `${user.name} has left`)
+        await generateMessage(
+          "Admin",
+          `${user.name} has left`,
+          "1",
+          "https://cdn3.iconfinder.com/data/icons/business-avatar-1/512/7_avatar-512.png",
+          user.room
+        )
       );
     }
   });

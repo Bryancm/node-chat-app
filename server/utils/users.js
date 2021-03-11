@@ -1,41 +1,45 @@
-[
-  {
-    id: "wqsdfasdfadf",
-    name: "Andrew",
-    room: "The Office fans",
-  },
-];
+const { User } = require("../db/models/user");
 
 class Users {
   constructor() {
     this.users = [];
   }
 
-  addUser(id, name, room, url) {
-    var user = { id, name, room, url };
-    this.users.push(user);
-    return user;
-  }
-
-  removeUser(id) {
-    var deletedUser = this.users.filter((user) => user.id === id);
-
-    if (deletedUser) {
-      this.users = this.users.filter((user) => user.id !== id);
+  async addUser(id, name, room, url) {
+    try {
+      var user = new User({ id, name, room, url });
+      const u = await user.save();
+      return u;
+    } catch (error) {
+      console.log("ERROR: ", error);
     }
-
-    return deletedUser[0];
   }
 
-  getUser(id) {
-    var user = this.users.filter((user) => user.id === id);
-    return user[0];
+  async removeUser(id) {
+    try {
+      const u = await User.findOneAndDelete({ id });
+      return u;
+    } catch (error) {
+      console.log("ERROR: ", error);
+    }
   }
 
-  getUserList(room) {
-    var users = this.users.filter((user) => user.room === room);
-    var namesArray = users.map((user) => user);
-    return namesArray;
+  async getUser(id) {
+    try {
+      const u = await User.findOne({ id });
+      return u;
+    } catch (error) {
+      console.log("ERROR: ", error);
+    }
+  }
+
+  async getUserList(room) {
+    try {
+      const users = await User.find({ room });
+      return users;
+    } catch (error) {
+      console.log("ERROR: ", error);
+    }
   }
 }
 module.exports = { Users };
