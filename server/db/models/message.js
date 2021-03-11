@@ -14,10 +14,9 @@ var Message = mongoose.model("Message", {
     trim: true,
   },
   createdAt: {
-    type: String,
+    type: Number,
     required: true,
     minlength: 1,
-    trim: true,
   },
   url: {
     type: String,
@@ -26,6 +25,12 @@ var Message = mongoose.model("Message", {
     trim: true,
   },
   userId: {
+    type: String,
+    required: true,
+    minlength: 1,
+    trim: true,
+  },
+  room: {
     type: String,
     required: true,
     minlength: 1,

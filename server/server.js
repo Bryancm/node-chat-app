@@ -36,17 +36,6 @@ io.on("connection", (socket) => {
     const usersList = await users.getUserList(params.room);
     io.to(params.room).emit("updateUserList", usersList);
 
-    socket.emit(
-      "newMessage",
-      await generateMessage(
-        "Admin",
-        "Welcome to the chat app",
-        `1`,
-        "https://cdn3.iconfinder.com/data/icons/business-avatar-1/512/7_avatar-512.png",
-        params.room
-      )
-    );
-
     socket.broadcast
       .to(params.room)
       .emit(
