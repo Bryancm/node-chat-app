@@ -8,7 +8,7 @@ const { mongoose } = require("./db/index");
 var { generateMessage, getMessageList } = require("./utils/message");
 const { isRealString } = require("./utils/validation");
 const { Users } = require("./utils/users");
-const publicPath = path.join(__dirname, "../public");
+const publicPath = path.join(__dirname, "../public/build");
 
 const port = process.env.PORT || 3001;
 var app = express();
@@ -22,6 +22,11 @@ var io = new Server(server, {
 var users = new Users();
 
 app.use(express.static(publicPath));
+app.get("/*", (req, res, next) => {
+  res.sendFile("index.html", {
+    root: publicPath,
+  });
+});
 
 io.on("connection", (socket) => {
   console.log("user connected");
